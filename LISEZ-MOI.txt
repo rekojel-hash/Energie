@@ -1,0 +1,37 @@
+====================================================
+  ENERGIE PWA — CONFIGURATION GITHUB PAGES
+====================================================
+
+ETAPE OBLIGATOIRE avant de pousser sur GitHub :
+
+Ouvrez le fichier  manifest.json
+Remplacez les 2 occurrences de  NOM-DU-REPO  par le vrai nom de votre repo.
+
+Exemple : si votre repo s'appelle "energie-maison"
+
+  AVANT :
+    "start_url": "/NOM-DU-REPO/index.html",
+    "scope": "/NOM-DU-REPO/",
+
+  APRES :
+    "start_url": "/energie-maison/index.html",
+    "scope": "/energie-maison/",
+
+C'est le SEUL fichier à modifier.
+Les 6 fichiers vont tous à la RACINE du repo GitHub, pas dans un sous-dossier.
+
+====================================================
+  VERIFIER QUE CA FONCTIONNE
+====================================================
+
+1. Ouvrez l'URL dans Brave sur Android
+2. Attendez 5-10 secondes que le Service Worker s'installe
+3. Menu ⋮ (trois points en bas à droite)
+4. "Installer l'application" doit apparaître
+
+Si toujours absent après avoir rechargé 2 fois :
+- Vider le cache Brave : Paramètres > Confidentialité > Effacer les données
+- Recharger la page
+- Réessayer le menu ⋮
+
+====================================================

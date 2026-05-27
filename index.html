@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Energie">
+  <meta name="application-name" content="Energie">
+  <meta name="description" content="Suivi et prévisionnel de consommation d'énergie domestique">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>Energie</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #060b18;
+      --bg2:     #0a0f1e;
+      --bg3:     #0f172a;
+      --bg4:     #1e293b;
+      --border:  #1e293b;
+      --text:    #e2e8f0;
+      --text2:   #94a3b8;
+      --text3:   #64748b;
+      --text4:   #475569;
+      --accent:  #6366f1;
+      --accent2: #818cf8;
+      --danger:  #ef4444;
+      --success: #4ade80;
+      --font:    'IBM Plex Sans', sans-serif;
+      --mono:    'DM Mono', monospace;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); -webkit-font-smoothing: antialiased; overscroll-behavior: none; }
+
+    #app { display: flex; flex-direction: column; height: 100dvh; }
+
+    #header { background: linear-gradient(160deg, #0d1117 0%, #1a1040 100%); border-bottom: 1px solid var(--border); padding-top: env(safe-area-inset-top, 0); flex-shrink: 0; }
+    .header-inner { padding: 20px 16px 0; }
+    .header-tag { font-size: 10px; color: var(--accent); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 4px; }
+    .header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+    h1 { font-size: 22px; font-weight: 600; color: #f1f5f9; }
+    .header-sub { font-size: 12px; color: var(--text4); margin-top: 2px; }
+    .alert-badge { background: #7f1d1d33; border: 1px solid #ef444455; border-radius: 8px; padding: 6px 10px; font-size: 11px; color: #fca5a5; }
+
+    .pills-row { display: flex; gap: 5px; overflow-x: auto; padding: 0 16px 12px; scrollbar-width: none; }
+    .pills-row::-webkit-scrollbar { display: none; }
+    .pill { padding: 6px 13px; border-radius: 20px; border: none; cursor: pointer; font-size: 12px; font-weight: 500; white-space: nowrap; background: rgba(255,255,255,0.06); color: var(--text2); transition: all .15s; font-family: var(--font); }
+    .pill.active { background: var(--accent); color: #fff; }
+    .pill-add { padding: 5px 10px; border-radius: 20px; border: 1px dashed var(--bg4); background: transparent; color: var(--text3); font-size: 12px; cursor: pointer; white-space: nowrap; font-family: var(--font); }
+
+    #main { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 70px); }
+
+    #summary { padding: 14px 16px 0; display: flex; flex-direction: column; gap: 9px; }
+
+    .summary-card { background: linear-gradient(135deg, #1e1b4b, #0d1117); border: 1px solid #6366f133; border-radius: 12px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .summary-card.alert { border-color: #ef444455; }
+    .summary-label { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
+    .summary-val { font-size: 26px; font-weight: 700; color: #f1f5f9; font-family: var(--mono); display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+    .summary-currency { font-size: 14px; color: var(--accent); }
+    .summary-sub { font-size: 11px; color: var(--text4); margin-top: 3px; }
+    .summary-right { text-align: right; }
+    .summary-proj { color: var(--accent); font-size: 13px; font-family: var(--mono); }
+    .summary-ctx { color: var(--text4); font-size: 11px; }
+
+    .energy-card { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 11px 14px; display: flex; align-items: center; gap: 10px; border: 1px solid transparent; }
+    .energy-card.alert { border-color: #ef444455; }
+    .ec-icon { font-size: 22px; } .ec-info { flex: 1; }
+    .ec-label { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
+    .ec-val { font-size: 17px; font-weight: 700; color: #f1f5f9; font-family: var(--mono); }
+    .ec-unit { font-size: 10px; color: var(--text4); }
+    .ec-right { text-align: right; }
+    .ec-cost { font-size: 15px; font-weight: 700; font-family: var(--mono); }
+
+    .delta { font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 6px; }
+    .delta.up { color: #f87171; background: #7f1d1d33; }
+    .delta.down { color: #4ade80; background: #14532d33; }
+
+    .bbar-wrap { margin-top: 8px; }
+    .bbar-track { height: 5px; background: var(--bg4); border-radius: 3px; overflow: hidden; }
+    .bbar-fill { height: 100%; border-radius: 3px; transition: width .5s; }
+    .bbar-labels { display: flex; justify-content: space-between; margin-top: 3px; font-size: 10px; color: var(--text3); }
+
+    .minibar { height: 4px; background: var(--bg4); border-radius: 2px; overflow: hidden; margin-top: 4px; }
+    .minibar-fill { height: 100%; border-radius: 2px; transition: width .5s; }
+
+    #tabbar { position: fixed; bottom: 0; left: 0; right: 0; padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 8px); background: #0a0f1e; border-top: 1px solid var(--border); display: flex; gap: 3px; z-index: 100; }
+    .tab-btn { flex: 1; padding: 8px 2px; border-radius: 9px; border: none; cursor: pointer; font-size: 10px; font-weight: 500; background: transparent; color: var(--text3); transition: all .15s; font-family: var(--font); line-height: 1.3; }
+    .tab-btn.active { background: var(--accent); color: #fff; }
+
+    .tab-body { padding: 16px 16px 0; }
+    .tab-desc { font-size: 12px; color: var(--text3); margin-bottom: 16px; line-height: 1.6; }
+    .tab-desc strong { color: #cbd5e1; }
+    .mt8{margin-top:8px} .mt12{margin-top:12px} .mt20{margin-top:20px} .mb14{margin-bottom:14px} .p12{padding:12px}
+
+    .card { background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; }
+    .card-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .card-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .link-btn { background: transparent; border: none; color: var(--accent); cursor: pointer; font-size: 12px; font-family: var(--font); }
+    .section-head { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; }
+
+    .field-group { margin-bottom: 16px; }
+    .field-label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+    .field-unit { color: var(--text4); }
+    .field-row { display: flex; gap: 8px; align-items: center; }
+    .field-cost { min-width: 70px; text-align: right; }
+    .cost-val { display: block; font-family: var(--mono); font-size: 13px; font-weight: 600; }
+    .cost-tag { display: block; font-size: 9px; margin-top: 2px; }
+
+    .num-input { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; color: #f1f5f9; font-size: 14px; font-family: var(--mono); outline: none; width: 100%; }
+    .num-input.sm { width: 80px; text-align: right; border: 1px solid var(--bg4); }
+    .num-input::placeholder { color: var(--text4); font-family: var(--font); font-size: 13px; }
+
+    .tarif-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .tarif-label { flex: 1; font-size: 12px; color: #cbd5e1; }
+    .tarif-unit { font-size: 10px; color: var(--text4); width: 48px; }
+
+    .budget-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .budget-cell { background: var(--bg4); border-radius: 8px; padding: 8px 10px; }
+    .budget-cell-label { font-size: 10px; color: var(--text3); }
+    .budget-cell-val { font-family: var(--mono); font-size: 15px; }
+
+    .usage-group { margin-bottom: 24px; }
+    .usage-group-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .usage-total { color: var(--text4); font-weight: 400; font-size: 11px; margin-left: auto; }
+    .usage-item { margin-bottom: 12px; }
+    .usage-item-head { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; color: var(--text2); }
+    .usage-unit { font-size: 11px; color: var(--text4); }
+    .usage-item-ctrl { display: flex; align-items: center; gap: 10px; }
+    .usage-val { width: 44px; text-align: right; font-family: var(--mono); font-size: 13px; }
+
+    .total-card { background: linear-gradient(135deg,#1e1b4b,#0d1117); border: 1px solid #6366f133; border-radius: 12px; padding: 16px; text-align: center; }
+    .total-label { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
+    .total-val { font-size: 34px; font-weight: 700; color: #f1f5f9; font-family: var(--mono); }
+    .total-unit { font-size: 15px; color: var(--accent); }
+    .total-sub { font-size: 12px; color: var(--text4); margin-top: 4px; }
+    .energy-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .eg-icon { font-size: 18px; } .eg-cost { font-size: 15px; font-weight: 700; font-family: var(--mono); } .eg-qty { font-size: 10px; color: var(--text4); }
+
+    .barchart { display: flex; align-items: flex-end; gap: 3px; height: 90px; }
+    .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
+    .bar { width: 100%; border-radius: 3px 3px 0 0; transition: all .3s; }
+    .bar-label { font-size: 8px; }
+    .budget-hint { font-size: 10px; color: var(--text4); margin-top: 8px; }
+    .budget-hint span { color: var(--accent); }
+
+    .month-row { padding: 9px 14px; border-bottom: 1px solid #0a0f18; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+    .month-row:last-child { border-bottom: none; }
+    .month-row.selected { background: #1e1b4b22; }
+    .month-row-label { width: 26px; font-size: 12px; font-weight: 600; }
+    .month-row-cost { font-family: var(--mono); font-size: 13px; min-width: 52px; text-align: right; }
+    .tag { font-size: 8px; border-radius: 4px; padding: 2px 5px; }
+    .tag.cyan { color: #22d3ee; background: #164e6322; }
+    .tag.red { color: #f87171; background: #7f1d1d22; }
+
+    .comp-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .comp-icon { width: 20px; }
+    .comp-label { flex: 1; font-size: 12px; color: var(--text2); }
+    .comp-val { font-family: var(--mono); font-size: 12px; color: #f1f5f9; }
+
+    .persons-grid { display: flex; gap: 8px; }
+    .person-btn { flex: 1; padding: 10px 0; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; background: var(--bg4); color: var(--text3); font-family: var(--font); transition: all .15s; }
+    .person-btn.sel { background: var(--accent); color: #fff; }
+    .ctx-tag { font-size: 12px; color: var(--text2); }
+
+    .big-btn { display: block; width: 100%; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; font-family: var(--font); text-align: center; }
+    .big-btn.indigo { background: linear-gradient(135deg,#4f46e5,#7c3aed); color: #fff; }
+    .big-btn.green { background: linear-gradient(135deg,#059669,#047857); color: #fff; }
+    .big-btn-outline { display: block; width: 100%; padding: 11px; border-radius: 10px; border: 1px dashed var(--bg4); cursor: pointer; text-align: center; color: var(--text3); font-size: 13px; font-family: var(--font); }
+    .yr-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px 12px; background: var(--bg4); border-radius: 8px; }
+    .yr-label { width: 40px; font-family: var(--mono); font-size: 14px; font-weight: 600; }
+
+    /* ── Bannière installation ── */
+    #pwa-banner {
+      display: none;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+      background: linear-gradient(135deg, #312e81, #4c1d95);
+      border-bottom: 1px solid #6366f155;
+      padding: 12px 16px 12px;
+      padding-top: max(12px, env(safe-area-inset-top));
+      flex-direction: row; align-items: center; gap: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    }
+    #pwa-banner.visible { display: flex; }
+    #pwa-banner-icon { font-size: 28px; flex-shrink: 0; }
+    #pwa-banner-text { flex: 1; }
+    #pwa-banner-text strong { display: block; font-size: 14px; color: #f1f5f9; margin-bottom: 2px; }
+    #pwa-banner-text span { font-size: 12px; color: #a5b4fc; }
+    #pwa-banner-install {
+      background: #fff; color: #4f46e5; border: none;
+      border-radius: 8px; padding: 8px 14px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      font-family: var(--font); white-space: nowrap; flex-shrink: 0;
+    }
+    #pwa-banner-close {
+      background: transparent; border: none; color: rgba(255,255,255,0.5);
+      font-size: 22px; cursor: pointer; padding: 0; line-height: 1; flex-shrink: 0;
+    }
+
+    /* ── Modal guide manuel (Brave) ── */
+    #guide-overlay {
+      display: none; position: fixed; inset: 0; z-index: 9998;
+      background: rgba(0,0,0,0.8); align-items: flex-end;
+    }
+    #guide-overlay.visible { display: flex; }
+    #guide-modal {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 20px 20px 0 0;
+      padding: 28px 20px calc(env(safe-area-inset-bottom,0px) + 28px);
+      width: 100%;
+    }
+    #guide-modal h2 { font-size: 18px; color: #f1f5f9; margin-bottom: 8px; }
+    #guide-modal > p { font-size: 13px; color: #94a3b8; margin-bottom: 20px; line-height: 1.6; }
+    .g-step { display: flex; gap: 14px; background: #0f172a; border-radius: 12px; padding: 14px; margin-bottom: 10px; border: 1px solid #1e293b; }
+    .g-num { width: 30px; height: 30px; border-radius: 50%; background: #6366f1; color: #fff; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .g-text { font-size: 13px; color: #cbd5e1; line-height: 1.6; }
+    .g-text b { color: #f1f5f9; }
+    #guide-close { width: 100%; margin-top: 16px; padding: 14px; border-radius: 12px; border: none; cursor: pointer; background: #334155; color: #94a3b8; font-size: 14px; font-family: var(--font); }
+
+    /* ── FAB flottant ── */
+    #fab {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom,0px) + 76px);
+      right: 16px; z-index: 500;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      border: none; border-radius: 50px;
+      padding: 11px 16px;
+      color: #fff; font-size: 12px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; gap: 7px;
+      box-shadow: 0 4px 20px #6366f177;
+      font-family: var(--font);
+      transition: opacity .3s, transform .15s;
+    }
+    #fab:active { transform: scale(0.95); }
+    #fab.hidden { opacity: 0; pointer-events: none; }
+  </style>
+</head>
+<body>
+
+<!-- Bannière native (si beforeinstallprompt disponible) -->
+<div id="pwa-banner">
+  <div id="pwa-banner-icon">⚡</div>
+  <div id="pwa-banner-text">
+    <strong>Installer Energie</strong>
+    <span>Accès rapide depuis l'écran d'accueil</span>
+  </div>
+  <button id="pwa-banner-install">Installer</button>
+  <button id="pwa-banner-close" aria-label="Fermer">×</button>
+</div>
+
+<!-- Guide manuel Brave -->
+<div id="guide-overlay">
+  <div id="guide-modal">
+    <h2>📲 Installer sur Android</h2>
+    <p>Dans <b>Brave</b>, l'installation manuelle prend 3 secondes :</p>
+    <div class="g-step">
+      <div class="g-num">1</div>
+      <div class="g-text">Appuyez sur les <b>⋮ trois points</b> en bas à droite de Brave</div>
+    </div>
+    <div class="g-step">
+      <div class="g-num">2</div>
+      <div class="g-text">Cherchez <b>"Installer l'application"</b><br>ou <b>"Ajouter à l'écran d'accueil"</b></div>
+    </div>
+    <div class="g-step">
+      <div class="g-num">3</div>
+      <div class="g-text">Appuyez sur <b>Ajouter</b> dans la boîte Android — l'icône ⚡ apparaît sur votre écran</div>
+    </div>
+    <button id="guide-close">Compris, je vais essayer</button>
+  </div>
+</div>
+
+<!-- FAB toujours visible -->
+<button id="fab" aria-label="Installer l'application">⬇️ Installer</button>
+
+<!-- App -->
+<div id="app">
+  <div id="header">
+    <div class="header-inner">
+      <div class="header-tag">Maison · Energie</div>
+      <div class="header-row">
+        <div>
+          <h1>Tableau de bord</h1>
+          <div class="header-sub">Suivi · Historique · Prévisionnel</div>
+        </div>
+        <div id="header-alert"></div>
+      </div>
+    </div>
+    <div class="pills-row" id="year-pills"></div>
+    <div class="pills-row" id="month-pills"></div>
+  </div>
+  <div id="main">
+    <div id="summary">
+      <div id="summary-total"></div>
+      <div id="summary-energies"></div>
+    </div>
+    <div id="tab-content"></div>
+  </div>
+  <nav id="tabbar">
+    <button class="tab-btn" data-tab="releves">📋<br>Relevés</button>
+    <button class="tab-btn" data-tab="usages">🔌<br>Usages</button>
+    <button class="tab-btn" data-tab="previsionnel">📈<br>Prévi.</button>
+    <button class="tab-btn" data-tab="contexte">🌡️<br>Contexte</button>
+    <button class="tab-btn" data-tab="sauvegarde">💾<br>Données</button>
+  </nav>
+</div>
+
+<script src="app.js"></script>
+<script>
+(function () {
+  var fab        = document.getElementById('fab');
+  var banner     = document.getElementById('pwa-banner');
+  var btnInstall = document.getElementById('pwa-banner-install');
+  var btnClose   = document.getElementById('pwa-banner-close');
+  var overlay    = document.getElementById('guide-overlay');
+  var guideClose = document.getElementById('guide-close');
+
+  // Déjà installée en standalone → cacher tout
+  var standalone = window.matchMedia('(display-mode: standalone)').matches
+                || window.navigator.standalone === true;
+  if (standalone) {
+    fab.classList.add('hidden');
+    return;
+  }
+
+  var deferred = null;
+
+  // Navigateur supporte beforeinstallprompt (Chrome, certaines versions Brave)
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferred = e;
+    // Afficher la bannière native en haut
+    banner.classList.add('visible');
+    // Le FAB pointe aussi vers la bannière
+    fab.onclick = function () { banner.classList.add('visible'); };
+  });
+
+  // Clic sur "Installer" dans la bannière → prompt natif Android
+  btnInstall.addEventListener('click', async function () {
+    if (!deferred) return;
+    banner.classList.remove('visible');
+    deferred.prompt();
+    var result = await deferred.userChoice;
+    deferred = null;
+    if (result.outcome === 'accepted') fab.classList.add('hidden');
+  });
+
+  btnClose.addEventListener('click', function () {
+    banner.classList.remove('visible');
+  });
+
+  // FAB par défaut (Brave bloque beforeinstallprompt) → guide manuel
+  fab.onclick = function () {
+    overlay.classList.add('visible');
+  };
+
+  guideClose.addEventListener('click', function () {
+    overlay.classList.remove('visible');
+  });
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) overlay.classList.remove('visible');
+  });
+
+  window.addEventListener('appinstalled', function () {
+    fab.classList.add('hidden');
+    banner.classList.remove('visible');
+  });
+
+  // Enregistrement du Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      // Déterminer le chemin de base automatiquement (fonctionne sur GitHub Pages /repo/ comme sur racine /)
+      var swPath = new URL('sw.js', window.location.href).pathname;
+      var scopePath = new URL('./', window.location.href).pathname;
+      navigator.serviceWorker.register(swPath, { scope: scopePath })
+        .then(function (reg) { console.log('[SW] OK scope:', reg.scope); })
+        .catch(function (err) { console.warn('[SW] Erreur:', err); });
+    });
+  }
+})();
+</script>
+</body>
+</html>
